@@ -1,1995 +1,472 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Unapp — The macOS uninstaller</title>
-<meta name="description" content="Unapp analyzes macOS applications and their related files before removal.">
-
-<link rel="icon" href="https://i.postimg.cc/SqMzGbtZ/icon.png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,350..600,0..1,-50..200" rel="stylesheet">
-
-<style>
-:root{
-    --bg:#08090b;
-    --bg2:#0d0f12;
-    --panel:#111318;
-    --panel2:#15181d;
-    --line:rgba(255,255,255,.085);
-    --line2:rgba(255,255,255,.14);
-    --text:#f5f6f8;
-    --muted:#9a9da5;
-    --dim:#666a73;
-    --white:#fff;
-    --green:#78dba0;
-    --blue:#79aefb;
-    --yellow:#e3c16d;
-    --red:#f27d7d;
-    --max:1280px;
-    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Helvetica,Arial,sans-serif;
-}
-
-*{box-sizing:border-box}
-
-html{
-    scroll-behavior:smooth;
-    scroll-padding-top:80px;
-}
-
-body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:var(--font);
-    -webkit-font-smoothing:antialiased;
-}
-
-body.menu-open{
-    overflow:hidden;
-}
-
-a{
-    color:inherit;
-    text-decoration:none;
-}
-
-button,input{
-    font:inherit;
-}
-
-.material-symbols-rounded{
-    font-size:22px;
-    line-height:1;
-    font-variation-settings:
-        "FILL" 0,
-        "wght" 450,
-        "GRAD" 0,
-        "opsz" 24;
-}
-
-/* TOP BAR */
-
-.header{
-    position:fixed;
-    inset:0 0 auto 0;
-    height:68px;
-    z-index:1000;
-    border-bottom:1px solid transparent;
-    transition:.25s;
-}
-
-.header.scrolled{
-    background:rgba(8,9,11,.78);
-    border-color:var(--line);
-    backdrop-filter:blur(22px) saturate(150%);
-}
-
-.header-inner{
-    max-width:var(--max);
-    height:100%;
-    margin:auto;
-    padding:0 28px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-}
-
-.logo{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:16px;
-    font-weight:600;
-    letter-spacing:-.02em;
-}
-
-.logo img{
-    width:30px;
-    height:30px;
-    border-radius:8px;
-}
-
-.nav{
-    display:flex;
-    align-items:center;
-    gap:2px;
-}
-
-.nav a{
-    color:var(--muted);
-    padding:9px 12px;
-    border-radius:8px;
-    font-size:13px;
-    transition:.18s;
-}
-
-.nav a:hover{
-    color:var(--text);
-    background:rgba(255,255,255,.055);
-}
-
-.nav .download-link{
-    margin-left:8px;
-    color:#090a0c;
-    background:#f4f5f7;
-    font-weight:600;
-}
-
-.nav .download-link:hover{
-    background:#dfe1e5;
-}
-
-.menu-button{
-    display:none;
-    width:40px;
-    height:40px;
-    border:0;
-    border-radius:9px;
-    color:var(--text);
-    background:transparent;
-    cursor:pointer;
-}
-
-/* MOBILE NAV */
-
-.mobile-nav{
-    display:none;
-}
-
-/* HERO */
-
-.hero{
-    min-height:850px;
-    max-width:1100px;
-    margin:auto;
-    padding:190px 28px 130px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    text-align:center;
-}
-
-.hero-icon{
-    width:108px;
-    height:108px;
-    border-radius:27px;
-    margin-bottom:32px;
-    box-shadow:
-        0 25px 70px rgba(0,0,0,.55),
-        0 0 0 1px rgba(255,255,255,.08);
-}
-
-.pill{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    color:var(--muted);
-    border:1px solid var(--line);
-    background:rgba(255,255,255,.025);
-    border-radius:100px;
-    padding:7px 11px;
-    font-size:12px;
-    margin-bottom:24px;
-}
-
-.pill .material-symbols-rounded{
-    font-size:16px;
-}
-
-.hero h1{
-    max-width:900px;
-    margin:0;
-    font-size:clamp(55px,8vw,94px);
-    line-height:.96;
-    letter-spacing:-.075em;
-}
-
-.hero-text{
-    max-width:670px;
-    margin:30px auto 0;
-    color:var(--muted);
-    font-size:19px;
-    line-height:1.6;
-}
-
-.hero-actions{
-    display:flex;
-    gap:10px;
-    margin-top:34px;
-}
-
-.button{
-    min-height:45px;
-    padding:0 18px;
-    border-radius:10px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    border:1px solid var(--line2);
-    font-size:13px;
-    font-weight:600;
-    transition:.18s;
-}
-
-.button.primary{
-    background:#f3f4f6;
-    color:#08090b;
-    border-color:#f3f4f6;
-}
-
-.button.primary:hover{
-    background:#dcdfe4;
-}
-
-.button.secondary{
-    background:rgba(255,255,255,.035);
-    color:var(--text);
-}
-
-.button.secondary:hover{
-    background:rgba(255,255,255,.075);
-}
-
-.hero-meta{
-    margin-top:22px;
-    color:var(--dim);
-    font-size:12px;
-}
-
-/* GENERIC */
-
-.section{
-    max-width:var(--max);
-    margin:auto;
-    padding:115px 28px;
-}
-
-.section-border{
-    border-top:1px solid var(--line);
-}
-
-.section-head{
-    max-width:720px;
-    margin-bottom:55px;
-}
-
-.kicker{
-    color:var(--dim);
-    text-transform:uppercase;
-    letter-spacing:.13em;
-    font-size:11px;
-    font-weight:600;
-    margin-bottom:15px;
-}
-
-h2{
-    margin:0;
-    font-size:clamp(36px,5vw,57px);
-    line-height:1;
-    letter-spacing:-.055em;
-}
-
-.lead{
-    color:var(--muted);
-    font-size:17px;
-    line-height:1.7;
-    margin:20px 0 0;
-}
-
-/* FEATURE GRID */
-
-.features{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:12px;
-}
-
-.feature{
-    min-height:330px;
-    padding:28px;
-    border:1px solid var(--line);
-    border-radius:18px;
-    background:var(--panel);
-    display:flex;
-    flex-direction:column;
-    transition:.2s;
-}
-
-.feature:hover{
-    border-color:var(--line2);
-    background:var(--panel2);
-    transform:translateY(-2px);
-}
-
-.feature-icon{
-    width:43px;
-    height:43px;
-    display:grid;
-    place-items:center;
-    border-radius:11px;
-    background:rgba(255,255,255,.065);
-}
-
-.feature h3{
-    margin:0 0 10px;
-    margin-top:auto;
-    font-size:20px;
-    letter-spacing:-.025em;
-}
-
-.feature p{
-    margin:0;
-    color:var(--muted);
-    font-size:14px;
-    line-height:1.65;
-}
-
-/* WORKFLOW */
-
-.workflow{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    border:1px solid var(--line);
-    border-radius:18px;
-    overflow:hidden;
-}
-
-.step{
-    min-height:270px;
-    padding:25px;
-    border-right:1px solid var(--line);
-}
-
-.step:last-child{
-    border-right:0;
-}
-
-.step-number{
-    color:var(--dim);
-    font-size:11px;
-}
-
-.step .material-symbols-rounded{
-    display:block;
-    margin-top:55px;
-    font-size:30px;
-}
-
-.step h3{
-    margin:17px 0 8px;
-    font-size:18px;
-}
-
-.step p{
-    margin:0;
-    color:var(--muted);
-    font-size:13px;
-    line-height:1.6;
-}
-
-/* FILES */
-
-.file-table{
-    border-top:1px solid var(--line);
-}
-
-.file{
-    min-height:70px;
-    display:grid;
-    grid-template-columns:250px 1fr 110px;
-    align-items:center;
-    gap:20px;
-    border-bottom:1px solid var(--line);
-}
-
-.file-name{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-    font-weight:600;
-}
-
-.file-name .material-symbols-rounded{
-    color:var(--muted);
-}
-
-.file-path{
-    color:var(--muted);
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    font-size:12px;
-}
-
-.file-status{
-    color:var(--dim);
-    font-size:11px;
-    text-align:right;
-}
-
-/* DOCUMENTATION */
-
-.docs{
-    display:grid;
-    grid-template-columns:230px minmax(0,800px);
-    gap:75px;
-    justify-content:space-between;
-}
-
-.docs-sidebar{
-    position:sticky;
-    top:100px;
-    align-self:start;
-}
-
-.sidebar-title{
-    color:var(--dim);
-    text-transform:uppercase;
-    letter-spacing:.1em;
-    font-size:10px;
-    font-weight:600;
-    margin:0 0 12px 10px;
-}
-
-.sidebar-link{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    width:100%;
-    padding:8px 10px;
-    border-radius:7px;
-    color:var(--muted);
-    font-size:13px;
-    margin-bottom:2px;
-}
-
-.sidebar-link:hover,
-.sidebar-link.active{
-    color:var(--text);
-    background:rgba(255,255,255,.06);
-}
-
-.sidebar-link .material-symbols-rounded{
-    font-size:17px;
-}
-
-.docs-main{
-    min-width:0;
-}
-
-.search{
-    position:relative;
-    margin-bottom:65px;
-}
-
-.search .material-symbols-rounded{
-    position:absolute;
-    left:14px;
-    top:12px;
-    color:var(--dim);
-    font-size:20px;
-}
-
-.search input{
-    width:100%;
-    height:46px;
-    padding:0 15px 0 44px;
-    border:1px solid var(--line);
-    border-radius:10px;
-    outline:none;
-    background:var(--panel);
-    color:var(--text);
-    font-size:13px;
-}
-
-.search input:focus{
-    border-color:var(--line2);
-}
-
-.doc{
-    scroll-margin-top:100px;
-    margin-bottom:90px;
-}
-
-.doc:last-child{
-    margin-bottom:0;
-}
-
-.doc h3{
-    margin:0 0 18px;
-    font-size:31px;
-    letter-spacing:-.04em;
-}
-
-.doc h4{
-    margin:34px 0 10px;
-    font-size:17px;
-}
-
-.doc p{
-    margin:0 0 17px;
-    color:var(--muted);
-    font-size:14px;
-    line-height:1.8;
-}
-
-.doc ul{
-    color:var(--muted);
-    padding-left:20px;
-    line-height:1.9;
-    font-size:14px;
-}
-
-.doc code{
-    padding:2px 5px;
-    border-radius:5px;
-    background:rgba(255,255,255,.065);
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    font-size:.88em;
-}
-
-.code{
-    margin:22px 0;
-    padding:17px;
-    overflow:auto;
-    border:1px solid var(--line);
-    border-radius:10px;
-    background:#07080a;
-    color:#c5c8ce;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    font-size:12px;
-    line-height:1.7;
-}
-
-.notice{
-    display:flex;
-    gap:12px;
-    padding:16px;
-    margin:22px 0;
-    border:1px solid var(--line);
-    border-radius:10px;
-    background:rgba(255,255,255,.03);
-}
-
-.notice .material-symbols-rounded{
-    flex:0 0 auto;
-    color:var(--muted);
-}
-
-.notice p{
-    margin:0;
-    font-size:13px;
-}
-
-.table{
-    width:100%;
-    border-collapse:collapse;
-    margin:22px 0;
-    font-size:13px;
-}
-
-.table th,
-.table td{
-    text-align:left;
-    padding:14px 10px;
-    border-bottom:1px solid var(--line);
-}
-
-.table th{
-    color:var(--text);
-}
-
-.table td{
-    color:var(--muted);
-    line-height:1.55;
-}
-
-.badge{
-    display:inline-flex;
-    padding:4px 8px;
-    border-radius:5px;
-    font-size:10px;
-    font-weight:600;
-}
-
-.exact{
-    color:var(--green);
-    background:rgba(120,219,160,.1);
-}
-
-.strong{
-    color:var(--blue);
-    background:rgba(121,174,251,.1);
-}
-
-.possible{
-    color:var(--yellow);
-    background:rgba(227,193,109,.1);
-}
-
-/* RELEASE */
-
-.release{
-    border:1px solid var(--line);
-    border-radius:18px;
-    background:var(--panel);
-    overflow:hidden;
-}
-
-.release-head{
-    padding:26px 28px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid var(--line);
-}
-
-.release-head strong{
-    font-size:19px;
-}
-
-.release-head span{
-    color:var(--dim);
-    font-size:12px;
-}
-
-.release-body{
-    padding:26px 28px;
-}
-
-.release-item{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    color:var(--muted);
-    font-size:13px;
-    margin:12px 0;
-}
-
-.release-item .material-symbols-rounded{
-    color:var(--green);
-    font-size:17px;
-}
-
-/* DOWNLOAD */
-
-.download{
-    text-align:center;
-    padding:125px 28px;
-}
-
-.download-box{
-    max-width:900px;
-    margin:auto;
-    padding:70px 35px;
-    border:1px solid var(--line);
-    border-radius:24px;
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(255,255,255,.055),
-            transparent 45%
-        ),
-        var(--panel);
-}
-
-.download-box h2{
-    max-width:650px;
-    margin:auto;
-}
-
-.download-box p{
-    max-width:580px;
-    margin:20px auto 30px;
-    color:var(--muted);
-    line-height:1.7;
-    font-size:15px;
-}
-
-.download-meta{
-    margin-top:19px;
-    color:var(--dim);
-    font-size:11px;
-}
-
-/* FOOTER */
-
-footer{
-    border-top:1px solid var(--line);
-}
-
-.footer{
-    max-width:var(--max);
-    margin:auto;
-    padding:45px 28px;
-    display:flex;
-    justify-content:space-between;
-    gap:30px;
-}
-
-.footer-left{
-    color:var(--dim);
-    font-size:12px;
-}
-
-.footer-links{
-    display:flex;
-    gap:22px;
-}
-
-.footer-links a{
-    color:var(--muted);
-    font-size:12px;
-}
-
-.footer-links a:hover{
-    color:var(--text);
-}
-
-/* BACK TO TOP */
-
-.back-top{
-    position:fixed;
-    right:22px;
-    bottom:22px;
-    z-index:500;
-    width:42px;
-    height:42px;
-    border:1px solid var(--line2);
-    border-radius:10px;
-    background:rgba(17,19,24,.88);
-    color:var(--text);
-    display:grid;
-    place-items:center;
-    cursor:pointer;
-    opacity:0;
-    pointer-events:none;
-    transform:translateY(8px);
-    transition:.2s;
-    backdrop-filter:blur(16px);
-}
-
-.back-top.visible{
-    opacity:1;
-    pointer-events:auto;
-    transform:translateY(0);
-}
-
-/* RESPONSIVE */
-
-@media(max-width:900px){
-
-    .nav{
-        display:none;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0c0e0d">
+  <meta name="description" content="A cleaner way to uninstall Mac applications and their leftover files.">
+  <title>Unapp — A cleaner Mac</title>
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/CKKgwdZk/icon.png">
+
+  <style>
+    :root {
+      --accent: #739473;
+      --accent-light: #a8c5a8;
+      --bg: #0c0e0d;
+      --surface: #141714;
+      --text: #f4f6f3;
+      --muted: #9ba39b;
+      --border: #ffffff12;
     }
 
-    .menu-button{
-        display:grid;
-        place-items:center;
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+        "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .mobile-nav{
-        position:fixed;
-        inset:68px 0 0;
-        z-index:900;
-        padding:18px;
-        background:rgba(8,9,11,.97);
-        backdrop-filter:blur(20px);
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; }
+    .container { width: min(1080px, calc(100% - 48px)); margin-inline: auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-inline: max(24px, calc((100% - 1080px) / 2));
+      background: #0c0e0de8;
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-bottom: 1px solid var(--border);
     }
 
-    body.menu-open .mobile-nav{
-        display:block;
+    .brand { display: inline-flex; align-items: center; flex-shrink: 0; }
+    .brand img { width: 42px; height: 42px; object-fit: contain; }
+
+    nav { display: flex; align-items: center; gap: 30px; }
+    nav a { color: var(--muted); font-size: 13px; transition: color .2s; }
+    nav a:hover { color: white; }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 19px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background .2s, transform .2s, border-color .2s;
     }
 
-    .mobile-nav a{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        padding:15px 10px;
-        color:var(--muted);
-        border-bottom:1px solid var(--line);
-        font-size:15px;
+    .button:hover { transform: translateY(-2px); }
+    .primary { color: white; background: var(--accent); }
+    .primary:hover { background: #82a482; }
+    .secondary { border: 1px solid #ffffff20; background: #ffffff05; }
+    .secondary:hover { border-color: #73947380; }
+
+    .hero {
+      padding: 105px 0 90px;
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, #73947326, transparent 62%);
     }
 
-    .features{
-        grid-template-columns:1fr;
+    .hero-icon {
+      display: block;
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      margin: 0 auto 28px;
+      filter: drop-shadow(0 15px 35px #73947330);
     }
 
-    .workflow{
-        grid-template-columns:1fr 1fr;
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      margin-bottom: 23px;
+      border: 1px solid #73947350;
+      border-radius: 99px;
+      background: #73947312;
+      color: var(--accent-light);
+      font-size: 12px;
     }
 
-    .step{
-        border-bottom:1px solid var(--line);
+    .eyebrow::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-light);
     }
 
-    .step:nth-child(2){
-        border-right:0;
+    h1 {
+      margin: 0 auto 22px;
+      font-size: clamp(43px, 7vw, 76px);
+      line-height: 1.04;
+      letter-spacing: -3.8px;
+      font-weight: 700;
     }
 
-    .step:nth-child(3){
-        border-right:1px solid var(--line);
+    h1 span { color: var(--accent-light); }
+
+    .hero-description {
+      max-width: 550px;
+      margin: 0 auto 30px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.85;
     }
 
-    .docs{
-        grid-template-columns:1fr;
-        gap:40px;
+    .actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+    .platform { margin-top: 18px; color: #737b74; font-size: 12px; }
+
+    .preview {
+      max-width: 760px;
+      margin: 68px auto 0;
+      padding: 9px;
+      text-align: left;
+      border: 1px solid #ffffff1b;
+      border-radius: 19px;
+      background: linear-gradient(145deg, #252a25, #101210);
+      box-shadow: 0 35px 100px #0008;
     }
 
-    .docs-sidebar{
-        position:static;
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:3px;
+    .app-window {
+      padding: 24px;
+      border: 1px solid #ffffff0c;
+      border-radius: 12px;
+      background: #141714;
     }
 
-    .sidebar-title{
-        grid-column:1/-1;
-    }
-}
+    .window-bar { display: flex; align-items: center; gap: 7px; margin-bottom: 30px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .red { background: #ed6a5e; }
+    .yellow { background: #e8bd4b; }
+    .green { background: #61c454; }
 
-@media(max-width:600px){
-
-    .header-inner,
-    .section,
-    .footer{
-        padding-left:20px;
-        padding-right:20px;
-    }
-
-    .hero{
-        min-height:auto;
-        padding:145px 20px 100px;
+    .window-title {
+      margin: 0 auto;
+      padding-right: 33px;
+      color: #899189;
+      font-size: 12px;
     }
 
-    .hero-icon{
-        width:82px;
-        height:82px;
-        border-radius:20px;
+    .app-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+    .app-heading img { width: 47px; height: 47px; object-fit: contain; }
+    .app-heading h3 { margin: 0 0 5px; font-size: 17px; }
+    .app-heading p, .app-row small { margin: 0; color: #858e85; font-size: 12px; }
+
+    .app-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 13px;
+      border: 1px solid #ffffff0c;
+      border-radius: 11px;
+      background: #ffffff04;
     }
 
-    .hero h1{
-        font-size:50px;
+    .app-info { display: flex; align-items: center; gap: 12px; }
+    .app-letter {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 9px;
+      background: #292e29;
+      color: #d8e0d8;
+      font-weight: 600;
     }
 
-    .hero-text{
-        font-size:17px;
+    .app-row strong { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 550; }
+    .tag { padding: 9px 12px; border-radius: 8px; background: #73947320; color: var(--accent-light); font-size: 11px; white-space: nowrap; }
+    .preview-note { margin: 18px 0 0; color: #687168; font-size: 11px; }
+
+    section.content { padding: 86px 0; border-top: 1px solid var(--border); }
+    .section-label { color: var(--accent-light); font-size: 11px; font-weight: 650; letter-spacing: 2px; text-transform: uppercase; }
+    h2 { margin: 13px 0; font-size: clamp(30px, 4vw, 43px); letter-spacing: -1.8px; line-height: 1.15; }
+    .section-description { max-width: 550px; color: var(--muted); font-size: 14px; line-height: 1.9; }
+
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 38px; }
+    .feature {
+      padding: 25px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(145deg, #171a17, #111311);
+      transition: border-color .2s, transform .2s;
+    }
+    .feature:hover { transform: translateY(-3px); border-color: #73947360; }
+    .feature-icon {
+      display: grid;
+      width: 43px;
+      height: 43px;
+      place-items: center;
+      margin-bottom: 22px;
+      border: 1px solid #73947325;
+      border-radius: 12px;
+      background: #73947320;
+      color: var(--accent-light);
+      font-size: 20px;
+    }
+    .feature h3 { margin: 0 0 10px; font-size: 16px; }
+    .feature p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.85; }
+
+    .how { background: #101310; }
+    .how-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 65px; }
+    .steps { display: grid; gap: 27px; }
+    .step { display: flex; align-items: flex-start; gap: 15px; }
+    .step-number {
+      display: grid;
+      flex: 0 0 35px;
+      height: 35px;
+      place-items: center;
+      border-radius: 50%;
+      background: #73947325;
+      color: var(--accent-light);
+      font-size: 12px;
+    }
+    .step h3 { margin: 3px 0 7px; font-size: 15px; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
+
+    .cta {
+      padding: 90px 0;
+      text-align: center;
+      background: radial-gradient(ellipse at center, #73947320, transparent 66%);
+    }
+    .cta img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 18px; }
+    .cta h2 { margin-bottom: 12px; }
+    .cta p { margin: 0 0 27px; color: var(--muted); font-size: 14px; }
+
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+      color: #7d857d;
+      font-size: 12px;
+    }
+    .footer-brand { display: flex; align-items: center; gap: 9px; }
+    .footer-brand img { width: 24px; height: 24px; object-fit: contain; }
+    footer a:hover { color: white; }
+
+    @media (max-width: 700px) {
+      .container { width: calc(100% - 32px); }
+      header { height: 68px; padding-inline: 16px; }
+      .brand img { width: 36px; height: 36px; }
+      nav { gap: 14px; }
+      nav a { font-size: 12px; }
+      nav a:nth-child(2) { display: none; }
+      header > .button { padding: 10px 13px; font-size: 12px; }
+      .hero { padding: 75px 0 65px; }
+      h1 { letter-spacing: -2px; }
+      .hero-description { font-size: 14px; }
+      .preview { margin-top: 48px; }
+      .app-window { padding: 15px; }
+      section.content { padding: 65px 0; }
+      .features { grid-template-columns: 1fr; }
+      .feature { padding: 22px; }
+      .how-grid { grid-template-columns: 1fr; gap: 35px; }
+      .cta { padding: 70px 0; }
+      footer { flex-direction: column; }
     }
 
-    .hero-actions{
-        width:100%;
-        flex-direction:column;
+    @media (max-width: 390px) {
+      nav a:first-child { display: none; }
+      h1 { font-size: 41px; }
+      .app-row { padding: 10px; }
+      .tag { padding: 8px; }
     }
 
-    .hero-actions .button{
-        width:100%;
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
     }
-
-    .workflow{
-        grid-template-columns:1fr;
-    }
-
-    .step{
-        border-right:0!important;
-        border-bottom:1px solid var(--line);
-    }
-
-    .step:last-child{
-        border-bottom:0;
-    }
-
-    .file{
-        grid-template-columns:1fr;
-        gap:7px;
-        padding:17px 0;
-    }
-
-    .file-status{
-        display:none;
-    }
-
-    .docs-sidebar{
-        grid-template-columns:1fr;
-    }
-
-    .download-box{
-        padding:50px 20px;
-    }
-
-    .footer{
-        flex-direction:column;
-    }
-
-    .footer-links{
-        flex-wrap:wrap;
-    }
-}
-</style>
+  </style>
 </head>
 
 <body>
-
-<header class="header" id="header">
-    <div class="header-inner">
-
-        <a href="#home" class="logo">
-            <img src="https://i.postimg.cc/SqMzGbtZ/icon.png" alt="Unapp">
-            <span>Unapp</span>
-        </a>
-
-        <nav class="nav">
-            <a href="#features">Features</a>
-            <a href="#how-it-works">How it works</a>
-            <a href="#documentation">Documentation</a>
-            <a href="#releases">Releases</a>
-            <a href="#privacy">Privacy</a>
-            <a href="#download" class="download-link">Download</a>
-        </nav>
-
-        <button class="menu-button" id="menuButton" aria-label="Open navigation">
-            <span class="material-symbols-rounded">menu</span>
-        </button>
-
-    </div>
-</header>
-
-<nav class="mobile-nav" id="mobileNav">
-
-    <a href="#features">
-        <span class="material-symbols-rounded">auto_awesome</span>
-        Features
+  <header>
+    <a class="brand" href="#" aria-label="Home">
+      <img src="https://i.postimg.cc/CKKgwdZk/icon.png" alt="Logo">
     </a>
 
-    <a href="#how-it-works">
-        <span class="material-symbols-rounded">account_tree</span>
-        How it works
-    </a>
+    <nav aria-label="Main navigation">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="https://github.com/NikoCreations/Unapp" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </nav>
 
-    <a href="#documentation">
-        <span class="material-symbols-rounded">description</span>
-        Documentation
-    </a>
+    <a class="button primary" href="https://github.com/NikoCreations/Unapp/releases">Download</a>
+  </header>
 
-    <a href="#releases">
-        <span class="material-symbols-rounded">new_releases</span>
-        Releases
-    </a>
+  <main>
+    <section class="hero container">
+      <img class="hero-icon" src="https://i.postimg.cc/CKKgwdZk/icon.png" alt="Unapp application icon">
 
-    <a href="#privacy">
-        <span class="material-symbols-rounded">privacy_tip</span>
-        Privacy
-    </a>
+      <div><span class="eyebrow">Designed for macOS</span></div>
 
-    <a href="#download">
-        <span class="material-symbols-rounded">download</span>
-        Download
-    </a>
+      <h1>Uninstall apps.<br><span>Leave nothing behind.</span></h1>
 
-</nav>
+      <p class="hero-description">
+        A cleaner way to remove Mac applications and their leftover files.
+        Simple, focused, and designed for macOS.
+      </p>
 
+      <div class="actions">
+        <a class="button primary" href="https://github.com/NikoCreations/Unapp/releases">Get Unapp ↗</a>
+        <a class="button secondary" href="https://github.com/NikoCreations/Unapp" target="_blank" rel="noopener noreferrer">View source code</a>
+      </div>
 
-<main>
+      <p class="platform">For Mac · Apple silicon</p>
 
-<!-- HERO -->
+      <div class="preview">
+        <div class="app-window">
+          <div class="window-bar">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <span class="window-title">Applications</span>
+          </div>
 
-<section class="hero" id="home">
+          <div class="app-heading">
+            <img src="https://i.postimg.cc/CKKgwdZk/icon.png" alt="">
+            <div>
+              <h3>Applications</h3>
+              <p>Manage installed apps and their files</p>
+            </div>
+          </div>
 
-    <img
-        class="hero-icon"
-        src="https://i.postimg.cc/SqMzGbtZ/icon.png"
-        alt="Unapp icon"
-    >
+          <div class="app-row">
+            <div class="app-info">
+              <div class="app-letter">A</div>
+              <div><strong>Example App</strong><small>Application · 124 MB</small></div>
+            </div>
+            <span class="tag">Select</span>
+          </div>
 
-    <div class="pill">
-        <span class="material-symbols-rounded">laptop_mac</span>
-        Native macOS utility
-    </div>
+          <div class="app-row">
+            <div class="app-info">
+              <div class="app-letter">B</div>
+              <div><strong>Another App</strong><small>Application · 86 MB</small></div>
+            </div>
+            <span class="tag">Select</span>
+          </div>
 
-    <h1>
-        Uninstall applications properly.
-    </h1>
+          <div class="app-row" style="background:#73947313;border-color:#73947335;margin-top:18px">
+            <div>
+              <strong>Ready for a clean uninstall</strong>
+              <small>Review the app and related files</small>
+            </div>
+            <span class="tag">Uninstall</span>
+          </div>
 
-    <p class="hero-text">
-        Unapp analyzes applications and the files associated with them,
-        giving you a clear view of what is going to be removed.
-    </p>
+          <p class="preview-note">Illustrative interface preview</p>
+        </div>
+      </div>
+    </section>
 
-    <div class="hero-actions">
-
-        <!-- Unapp 1.0 direct download -->
-        <a
-            class="button primary"
-            href="https://github.com/NikoCreations/Unapp/releases/download/1.0/Unapp-1.0-arm64-MacOSX.dmg"
-        >
-            <span class="material-symbols-rounded">download</span>
-            Download Unapp
-        </a>
-
-        <a class="button secondary" href="#documentation">
-            Read documentation
-            <span class="material-symbols-rounded">arrow_downward</span>
-        </a>
-
-    </div>
-
-    <div class="hero-meta">
-        Unapp 1.0 · macOS 27 or later · Apple Silicon
-    </div>
-
-</section>
-
-
-<!-- FEATURES -->
-
-<section class="section section-border" id="features">
-
-    <div class="section-head">
-        <div class="kicker">Features</div>
-
-        <h2>
-            An uninstaller that shows its work.
-        </h2>
-
-        <p class="lead">
-            Applications are more than the icon in your Applications folder.
-            Unapp looks at the places where macOS applications commonly keep
-            their data.
+    <section class="content" id="features">
+      <div class="container">
+        <span class="section-label">Why Unapp</span>
+        <h2>A simpler way to uninstall.</h2>
+        <p class="section-description">
+          The essentials, without the clutter. Keep your Mac tidy with a focused native-app experience.
         </p>
-    </div>
 
-    <div class="features">
+        <div class="features">
+          <article class="feature">
+            <div class="feature-icon" aria-hidden="true">⌫</div>
+            <h3>Clean removal</h3>
+            <p>Remove applications with a workflow built around a cleaner uninstall.</p>
+          </article>
 
-        <article class="feature">
-            <div class="feature-icon">
-                <span class="material-symbols-rounded">manage_search</span>
-            </div>
+          <article class="feature">
+            <div class="feature-icon" aria-hidden="true">⌕</div>
+            <h3>Related files</h3>
+            <p>Find associated files and caches to review what remains on your Mac.</p>
+          </article>
 
-            <h3>Analyze applications</h3>
+          <article class="feature">
+            <div class="feature-icon" aria-hidden="true">◈</div>
+            <h3>Mac-native feel</h3>
+            <p>A focused interface that keeps the experience simple and familiar.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-            <p>
-                Inspect an application's bundle identifier, containers,
-                application groups and other identifying information.
-            </p>
-        </article>
+    <section class="content how" id="how">
+      <div class="container how-grid">
+        <div>
+          <span class="section-label">How it works</span>
+          <h2>Less clutter.<br>More control.</h2>
+          <p class="section-description">
+            Unapp brings application removal and related-file review into one straightforward workflow.
+          </p>
+        </div>
 
-        <article class="feature">
-            <div class="feature-icon">
-                <span class="material-symbols-rounded">fact_check</span>
-            </div>
-
-            <h3>Review before removing</h3>
-
-            <p>
-                See detected files and the evidence behind their association
-                before confirming an uninstall.
-            </p>
-        </article>
-
-        <article class="feature">
-            <div class="feature-icon">
-                <span class="material-symbols-rounded">delete_sweep</span>
-            </div>
-
-            <h3>Use the macOS Trash</h3>
-
-            <p>
-                Selected items are moved to Trash instead of being immediately
-                and irreversibly destroyed.
-            </p>
-        </article>
-
-    </div>
-
-</section>
-
-
-<!-- HOW IT WORKS -->
-
-<section class="section section-border" id="how-it-works">
-
-    <div class="section-head">
-        <div class="kicker">Workflow</div>
-
-        <h2>
-            Four steps. Nothing hidden.
-        </h2>
-
-        <p class="lead">
-            Detection and removal are separate parts of the process,
-            so you can inspect the result before taking action.
-        </p>
-    </div>
-
-    <div class="workflow">
-
-        <article class="step">
+        <div class="steps">
+          <div class="step">
             <span class="step-number">01</span>
-            <span class="material-symbols-rounded">apps</span>
-            <h3>Select</h3>
-            <p>Choose the application you want to uninstall.</p>
-        </article>
+            <div>
+              <h3>Choose an application</h3>
+              <p>Find the app you want to remove.</p>
+            </div>
+          </div>
 
-        <article class="step">
+          <div class="step">
             <span class="step-number">02</span>
-            <span class="material-symbols-rounded">search</span>
-            <h3>Analyze</h3>
-            <p>Unapp searches relevant macOS locations.</p>
-        </article>
+            <div>
+              <h3>Review associated files</h3>
+              <p>Check related items before proceeding.</p>
+            </div>
+          </div>
 
-        <article class="step">
+          <div class="step">
             <span class="step-number">03</span>
-            <span class="material-symbols-rounded">fact_check</span>
-            <h3>Review</h3>
-            <p>Inspect the files and their evidence levels.</p>
-        </article>
-
-        <article class="step">
-            <span class="step-number">04</span>
-            <span class="material-symbols-rounded">delete</span>
-            <h3>Remove</h3>
-            <p>Confirm and move selected items to Trash.</p>
-        </article>
-
-    </div>
-
-</section>
-
-
-<!-- FILE LOCATIONS -->
-
-<section class="section section-border">
-
-    <div class="section-head">
-        <div class="kicker">Detection</div>
-
-        <h2>
-            Where Unapp looks.
-        </h2>
-
-        <p class="lead">
-            These are some of the standard macOS locations examined during
-            an application analysis.
-        </p>
-    </div>
-
-    <div class="file-table">
-
-        <div class="file">
-            <div class="file-name">
-                <span class="material-symbols-rounded">folder</span>
-                Application Support
+            <div>
+              <h3>Complete the uninstall</h3>
+              <p>Remove the items you've selected.</p>
             </div>
-
-            <div class="file-path">
-                ~/Library/Application Support/
-            </div>
-
-            <div class="file-status">ANALYZED</div>
+          </div>
         </div>
-
-        <div class="file">
-            <div class="file-name">
-                <span class="material-symbols-rounded">cached</span>
-                Caches
-            </div>
-
-            <div class="file-path">
-                ~/Library/Caches/
-            </div>
-
-            <div class="file-status">ANALYZED</div>
-        </div>
-
-        <div class="file">
-            <div class="file-name">
-                <span class="material-symbols-rounded">tune</span>
-                Preferences
-            </div>
-
-            <div class="file-path">
-                ~/Library/Preferences/
-            </div>
-
-            <div class="file-status">ANALYZED</div>
-        </div>
-
-        <div class="file">
-            <div class="file-name">
-                <span class="material-symbols-rounded">inventory_2</span>
-                Containers
-            </div>
-
-            <div class="file-path">
-                ~/Library/Containers/
-            </div>
-
-            <div class="file-status">ANALYZED</div>
-        </div>
-
-        <div class="file">
-            <div class="file-name">
-                <span class="material-symbols-rounded">folder_shared</span>
-                Group Containers
-            </div>
-
-            <div class="file-path">
-                ~/Library/Group Containers/
-            </div>
-
-            <div class="file-status">CONSERVATIVE</div>
-        </div>
-
-        <div class="file">
-            <div class="file-name">
-                <span class="material-symbols-rounded">history</span>
-                Saved Application State
-            </div>
-
-            <div class="file-path">
-                ~/Library/Saved Application State/
-            </div>
-
-            <div class="file-status">ANALYZED</div>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- DOCUMENTATION -->
-
-<section class="section section-border" id="documentation">
-
-    <div class="section-head">
-        <div class="kicker">Documentation</div>
-
-        <h2>
-            Everything about Unapp.
-        </h2>
-
-        <p class="lead">
-            How installation works, how files are detected, what the evidence
-            levels mean and what to do when something doesn't look right.
-        </p>
-    </div>
-
-    <div class="docs">
-
-        <aside class="docs-sidebar">
-
-            <div class="sidebar-title">
-                On this page
-            </div>
-
-            <a class="sidebar-link active" href="#getting-started">
-                <span class="material-symbols-rounded">play_arrow</span>
-                Getting started
-            </a>
-
-            <a class="sidebar-link" href="#installation">
-                <span class="material-symbols-rounded">install_desktop</span>
-                Installation
-            </a>
-
-            <a class="sidebar-link" href="#uninstalling">
-                <span class="material-symbols-rounded">delete</span>
-                Uninstalling
-            </a>
-
-            <a class="sidebar-link" href="#detection">
-                <span class="material-symbols-rounded">search</span>
-                File detection
-            </a>
-
-            <a class="sidebar-link" href="#evidence">
-                <span class="material-symbols-rounded">verified</span>
-                Evidence levels
-            </a>
-
-            <a class="sidebar-link" href="#full-disk">
-                <span class="material-symbols-rounded">security</span>
-                Full Disk Access
-            </a>
-
-            <a class="sidebar-link" href="#troubleshooting">
-                <span class="material-symbols-rounded">build</span>
-                Troubleshooting
-            </a>
-
-        </aside>
-
-
-        <div class="docs-main">
-
-            <div class="search">
-                <span class="material-symbols-rounded">search</span>
-                <input
-                    id="search"
-                    type="search"
-                    placeholder="Search the documentation..."
-                    aria-label="Search documentation"
-                >
-            </div>
-
-
-            <article class="doc" id="getting-started">
-
-                <h3>Getting started</h3>
-
-                <p>
-                    Unapp is a native macOS utility designed to analyze an
-                    application and identify files that may belong to it.
-                </p>
-
-                <p>
-                    Instead of assuming that every file with a similar name
-                    belongs to the application, Unapp evaluates multiple
-                    pieces of information and assigns different evidence
-                    levels.
-                </p>
-
-                <div class="notice">
-                    <span class="material-symbols-rounded">info</span>
-
-                    <p>
-                        Unapp is designed around review before removal.
-                        Detected files can be inspected before the uninstall
-                        is confirmed.
-                    </p>
-                </div>
-
-            </article>
-
-
-            <article class="doc" id="installation">
-
-                <h3>Installation</h3>
-
-                <p>
-                    Open the Unapp disk image and drag the application into
-                    your Applications folder.
-                </p>
-
-                <div class="code">
-/Applications/Unapp.app
-                </div>
-
-                <p>
-                    Unapp 1.0 targets Apple Silicon Macs running macOS 27
-                    or later.
-                </p>
-
-                <h4>First launch</h4>
-
-                <p>
-                    The first launch may request Full Disk Access. This
-                    permission allows Unapp to inspect locations protected
-                    by macOS privacy controls.
-                </p>
-
-            </article>
-
-
-            <article class="doc" id="uninstalling">
-
-                <h3>Uninstalling an application</h3>
-
-                <p>
-                    Start by selecting an application. Unapp reads the
-                    application's bundle information and starts an analysis.
-                </p>
-
-                <h4>Review the results</h4>
-
-                <ul>
-                    <li>Check the application name.</li>
-                    <li>Review the detected files.</li>
-                    <li>Check the evidence level.</li>
-                    <li>Confirm the items you want to remove.</li>
-                </ul>
-
-                <h4>Removal</h4>
-
-                <p>
-                    Selected items are moved to the macOS Trash using the
-                    system file-management mechanism.
-                </p>
-
-            </article>
-
-
-            <article class="doc" id="detection">
-
-                <h3>File detection</h3>
-
-                <p>
-                    macOS does not provide a universal database containing
-                    every file ever created by an application. An uninstaller
-                    therefore has to determine relationships using available
-                    application metadata and filesystem evidence.
-                </p>
-
-                <h4>Bundle identifiers</h4>
-
-                <p>
-                    The bundle identifier is one of the strongest identifiers
-                    available. For example:
-                </p>
-
-                <div class="code">
-com.example.Application
-                </div>
-
-                <p>
-                    Unapp can use this identifier when evaluating preferences,
-                    containers and other application-specific paths.
-                </p>
-
-                <h4>Application containers</h4>
-
-                <p>
-                    Sandboxed applications can use dedicated containers.
-                    These can provide a direct relationship between an
-                    application and its stored data.
-                </p>
-
-                <h4>Application names</h4>
-
-                <p>
-                    Application names can also provide useful evidence in
-                    locations such as caches, Application Support and logs.
-                    These matches are treated differently from exact
-                    identifier matches.
-                </p>
-
-            </article>
-
-
-            <article class="doc" id="evidence">
-
-                <h3>Evidence levels</h3>
-
-                <p>
-                    Detection strength matters. Unapp therefore separates
-                    files into three evidence levels.
-                </p>
-
-                <table class="table">
-
-                    <thead>
-                        <tr>
-                            <th>Level</th>
-                            <th>Meaning</th>
-                            <th>Handling</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        <tr>
-                            <td>
-                                <span class="badge exact">EXACT</span>
-                            </td>
-                            <td>
-                                Directly associated with an application
-                                identifier or declared container.
-                            </td>
-                            <td>Removable</td>
-                        </tr>
-
-                        <tr>
-                            <td>
-                                <span class="badge strong">STRONG</span>
-                            </td>
-                            <td>
-                                Strong relationship based on path,
-                                application name or known location.
-                            </td>
-                            <td>Removable</td>
-                        </tr>
-
-                        <tr>
-                            <td>
-                                <span class="badge possible">POSSIBLE</span>
-                            </td>
-                            <td>
-                                Potentially associated, but may be shared.
-                            </td>
-                            <td>Conservative</td>
-                        </tr>
-
-                    </tbody>
-
-                </table>
-
-                <div class="notice">
-                    <span class="material-symbols-rounded">shield</span>
-
-                    <p>
-                        Shared Group Containers are treated conservatively
-                        because more than one application can use the same
-                        container.
-                    </p>
-                </div>
-
-            </article>
-
-
-            <article class="doc" id="full-disk">
-
-                <h3>Full Disk Access</h3>
-
-                <p>
-                    macOS privacy protections can prevent an application
-                    from reading certain directories. Unapp may therefore
-                    need Full Disk Access for a complete analysis.
-                </p>
-
-                <h4>Granting access</h4>
-
-                <p>
-                    Open System Settings and go to Privacy & Security →
-                    Full Disk Access. Enable Unapp and launch it again.
-                </p>
-
-                <div class="code">
-System Settings
-    → Privacy & Security
-        → Full Disk Access
-            → Unapp
-                → Enabled
-                </div>
-
-                <div class="notice">
-                    <span class="material-symbols-rounded">lock</span>
-
-                    <p>
-                        macOS controls this permission. Unapp cannot grant
-                        Full Disk Access to itself.
-                    </p>
-                </div>
-
-            </article>
-
-
-            <article class="doc" id="troubleshooting">
-
-                <h3>Troubleshooting</h3>
-
-                <h4>Some files are missing</h4>
-
-                <p>
-                    Check Full Disk Access first. macOS may prevent access
-                    to protected locations when the permission is disabled.
-                </p>
-
-                <h4>An application is not detected</h4>
-
-                <p>
-                    Make sure the selected item is a valid macOS
-                    <code>.app</code> bundle.
-                </p>
-
-                <h4>A file is marked as possible</h4>
-
-                <p>
-                    This means the available evidence does not establish
-                    a sufficiently strong relationship for automatic removal.
-                    Shared data is intentionally handled conservatively.
-                </p>
-
-                <h4>Can removed files be recovered?</h4>
-
-                <p>
-                    Files moved to Trash remain subject to the normal macOS
-                    Trash workflow until the Trash is emptied.
-                </p>
-
-            </article>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- RELEASES -->
-
-<section class="section section-border" id="releases">
-
-    <div class="section-head">
-        <div class="kicker">Releases</div>
-
-        <h2>
-            Version history.
-        </h2>
-
-        <p class="lead">
-            Current release information for Unapp.
-        </p>
-    </div>
-
-    <div class="release">
-
-        <div class="release-head">
-            <strong>Unapp 1.0</strong>
-            <span>October 2026</span>
-        </div>
-
-        <div class="release-body">
-
-            <div class="release-item">
-                <span class="material-symbols-rounded">check_circle</span>
-                Native macOS application
-            </div>
-
-            <div class="release-item">
-                <span class="material-symbols-rounded">check_circle</span>
-                Application bundle analysis
-            </div>
-
-            <div class="release-item">
-                <span class="material-symbols-rounded">check_circle</span>
-                Related file detection
-            </div>
-
-            <div class="release-item">
-                <span class="material-symbols-rounded">check_circle</span>
-                Evidence-based attribution
-            </div>
-
-            <div class="release-item">
-                <span class="material-symbols-rounded">check_circle</span>
-                Trash-based removal
-            </div>
-
-            <div class="release-item">
-                <span class="material-symbols-rounded">check_circle</span>
-                Full Disk Access onboarding
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- PRIVACY -->
-
-<section class="section section-border" id="privacy">
-
-    <div class="section-head">
-        <div class="kicker">Privacy</div>
-
-        <h2>
-            Your applications stay on your Mac.
-        </h2>
-
-        <p class="lead">
-            The core Unapp workflow is designed to run locally on the Mac.
-            No account is required to analyze an application.
-        </p>
-    </div>
-
-    <div class="features">
-
-        <article class="feature">
-
-            <div class="feature-icon">
-                <span class="material-symbols-rounded">cloud_off</span>
-            </div>
-
-            <h3>No account required</h3>
-
-            <p>
-                The uninstall workflow does not require an online account.
-            </p>
-
-        </article>
-
-        <article class="feature">
-
-            <div class="feature-icon">
-                <span class="material-symbols-rounded">devices</span>
-            </div>
-
-            <h3>Local analysis</h3>
-
-            <p>
-                Application and filesystem analysis is performed locally.
-            </p>
-
-        </article>
-
-        <article class="feature">
-
-            <div class="feature-icon">
-                <span class="material-symbols-rounded">lock</span>
-            </div>
-
-            <h3>System permissions</h3>
-
-            <p>
-                Protected locations remain controlled by macOS privacy
-                permissions.
-            </p>
-
-        </article>
-
-    </div>
-
-</section>
-
-
-<!-- DOWNLOAD -->
-
-<section class="download section-border" id="download">
-
-    <div class="download-box">
-
-        <div class="kicker">Download</div>
-
-        <h2>
-            Uninstall without guessing.
-        </h2>
-
-        <p>
-            Download Unapp for Apple Silicon and inspect application-related
-            files before removing them.
-        </p>
-
-        <!-- Unapp 1.0 direct download -->
-
-        <a
-            class="button primary"
-            href="https://github.com/NikoCreations/Unapp/releases/download/1.0/Unapp-1.0-arm64-MacOSX.dmg"
-        >
-            <span class="material-symbols-rounded">download</span>
-            Download Unapp 1.0
-        </a>
-
-        <div class="download-meta">
-            macOS 27 or later · Apple Silicon · Unapp 1.0
-        </div>
-
-    </div>
-
-</section>
-
-</main>
-
-
-<footer>
-
-    <div class="footer">
-
-        <div class="footer-left">
-            © 2026 Unapp
-        </div>
-
-        <div class="footer-links">
-
-            <a href="#documentation">
-                Documentation
-            </a>
-
-            <a href="#releases">
-                Releases
-            </a>
-
-            <a href="#privacy">
-                Privacy
-            </a>
-
-            <a
-                href="https://github.com/NikoCreations/Unapp"
-                target="_blank"
-                rel="noopener"
-            >
-                GitHub
-            </a>
-
-        </div>
-
-    </div>
-
-</footer>
-
-
-<button
-    class="back-top"
-    id="backTop"
-    aria-label="Back to top"
->
-    <span class="material-symbols-rounded">
-        keyboard_arrow_up
-    </span>
-</button>
-
-
-<script>
-
-/* HEADER */
-
-const header = document.getElementById("header");
-
-window.addEventListener("scroll", () => {
-    header.classList.toggle(
-        "scrolled",
-        window.scrollY > 20
-    );
-});
-
-
-/* MOBILE MENU */
-
-const menuButton = document.getElementById("menuButton");
-
-menuButton.addEventListener("click", () => {
-
-    document.body.classList.toggle("menu-open");
-
-    const icon =
-        menuButton.querySelector(".material-symbols-rounded");
-
-    icon.textContent =
-        document.body.classList.contains("menu-open")
-        ? "close"
-        : "menu";
-});
-
-
-document.querySelectorAll(".mobile-nav a").forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        document.body.classList.remove("menu-open");
-
-        menuButton.querySelector(
-            ".material-symbols-rounded"
-        ).textContent = "menu";
-
-    });
-
-});
-
-
-/* DOCUMENTATION SEARCH */
-
-const search = document.getElementById("search");
-const documents = document.querySelectorAll(".doc");
-
-search.addEventListener("input", () => {
-
-    const query =
-        search.value.trim().toLowerCase();
-
-    documents.forEach(doc => {
-
-        const content =
-            doc.innerText.toLowerCase();
-
-        doc.style.display =
-            !query || content.includes(query)
-            ? ""
-            : "none";
-
-    });
-
-});
-
-
-/* DOCUMENTATION SIDEBAR */
-
-const sidebarLinks =
-    document.querySelectorAll(".sidebar-link");
-
-const docSections =
-    document.querySelectorAll(".doc");
-
-const sectionObserver =
-    new IntersectionObserver(
-        entries => {
-
-            entries.forEach(entry => {
-
-                if (!entry.isIntersecting) {
-                    return;
-                }
-
-                sidebarLinks.forEach(link => {
-                    link.classList.remove("active");
-                });
-
-                const active =
-                    document.querySelector(
-                        `.sidebar-link[href="#${entry.target.id}"]`
-                    );
-
-                if (active) {
-                    active.classList.add("active");
-                }
-
-            });
-
-        },
-        {
-            rootMargin:"-110px 0px -65% 0px"
-        }
-    );
-
-docSections.forEach(section => {
-    sectionObserver.observe(section);
-});
-
-
-/* BACK TO TOP */
-
-const backTop =
-    document.getElementById("backTop");
-
-window.addEventListener("scroll", () => {
-
-    backTop.classList.toggle(
-        "visible",
-        window.scrollY > 700
-    );
-
-});
-
-backTop.addEventListener("click", () => {
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
-
-});
-
-
-/* CLOSE MOBILE MENU WITH ESC */
-
-document.addEventListener("keydown", event => {
-
-    if (event.key === "Escape") {
-
-        document.body.classList.remove("menu-open");
-
-        menuButton.querySelector(
-            ".material-symbols-rounded"
-        ).textContent = "menu";
-
-    }
-
-});
-
-</script>
-
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="container">
+        <img src="https://i.postimg.cc/CKKgwdZk/icon.png" alt="Unapp icon">
+        <h2>A cleaner Mac starts here.</h2>
+        <p>Explore Unapp on GitHub.</p>
+        <a class="button primary" href="https://github.com/NikoCreations/Unapp/releases">View releases ↗</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container">
+    <a class="footer-brand" href="#" aria-label="Back to top">
+      <img src="https://i.postimg.cc/CKKgwdZk/icon.png" alt="">
+      <span>Made for macOS</span>
+    </a>
+    <a href="https://github.com/NikoCreations/Unapp" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+  </footer>
 </body>
 </html>
